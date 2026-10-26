@@ -54,10 +54,10 @@ export class MemoryRepository {
     this.domain = domain;
     this.maxItems = Number(config.maxItems) > 0 ? Number(config.maxItems) : 500;
     this.maxContentLength = Number(config.maxContentLength) > 0 ? Math.min(Number(config.maxContentLength), 100000) : 12000;
-    this.items = domain.table('memoryItems');
+    this.items = domain.table('memory_items');
     this.sources = domain.table('sources');
     this.revisions = domain.table('revisions');
-    this.accessLog = domain.table('accessLog');
+    this.access_log = domain.table('access_log');
     this.policyTable = domain.table('policy');
   }
 
@@ -68,7 +68,7 @@ export class MemoryRepository {
 
   async log(scope, operation, ok, details = {}) {
     const id = `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
-    await this.accessLog.put(id, { id, scope, operation, ok: Boolean(ok), at: new Date().toISOString(), details });
+    await this.access_log.put(id, { id, scope, operation, ok: Boolean(ok), at: new Date().toISOString(), details });
   }
 
   visible(item, scope, includeDeleted = false) {

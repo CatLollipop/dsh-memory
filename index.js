@@ -29,11 +29,11 @@ export async function apply(ctx, config = {}) {
       layout: 'single',
       invalidRecords: 'backup-and-skip',
       tables: {
-        memoryItems: { valueSchema: permissive },
+        memory_items: { valueSchema: permissive },
         sources: { valueSchema: permissive },
         revisions: { valueSchema: permissive },
         policy: { valueSchema: permissive },
-        accessLog: { valueSchema: permissive },
+        access_log: { valueSchema: permissive },
       },
     });
   } else {
