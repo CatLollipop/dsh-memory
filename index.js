@@ -23,7 +23,7 @@ export async function apply(ctx, config = {}) {
   let domain;
   let owned = false;
   if (storageDomain) {
-    domain = await storageDomain.open({
+    const spec = {
       name: 'dsh_memory',
       version: 1,
       layout: 'single',
@@ -35,7 +35,19 @@ export async function apply(ctx, config = {}) {
         policy: { valueSchema: permissive },
         access_log: { valueSchema: permissive },
       },
-    });
+    };
+    try {
+      domain = await storageDomain.open(spec);
+    } catch (error) {
+      // A previous unload may still be releasing the name; reuse the live domain
+      // instead of failing activation.
+      const existing = storageDomain.get?.('dsh_memory');
+      if (existing && (error?.code === 'already-open' || /already open/i.test(String(error?.message)))) {
+        domain = existing;
+      } else {
+        throw error;
+      }
+    }
   } else {
     if (!globalThis.__DSH_MEMORY_LOCAL__) globalThis.__DSH_MEMORY_LOCAL__ = new LocalDomain();
     domain = globalThis.__DSH_MEMORY_LOCAL__;
@@ -44,7 +56,13 @@ export async function apply(ctx, config = {}) {
   owned = Boolean(storageDomain);
 
   const disposer = ctx.connection.rpc.handle(ENDPOINT, async (_endpoint, payload = {}, _signal, peer) => handleRpc(repository, payload, peer));
-  ctx.effect?.(() => { Promise.resolve(disposer?.()).catch(() => {}); if (owned) Promise.resolve(domain.close()).catch(() => {}); });
+  let disposed = false;
+  ctx.effect?.(() => () => {
+    if (disposed) return;
+    disposed = true;
+    Promise.resolve(disposer?.()).catch(() => {});
+    if (owned) Promise.resolve(domain.close()).catch(() => {});
+  });
 
   if (ctx.tools?.register) {
     const toolDisposer = ctx.tools.register({
@@ -71,7 +89,7 @@ export async function apply(ctx, config = {}) {
          return repository.dispatch(normalizeScope(undefined, peer), { ...(args || {}), action });
       },
     });
-    ctx.effect?.(toolDisposer);
+    ctx.effect?.(() => toolDisposer);
   }
   return repository;
 }
