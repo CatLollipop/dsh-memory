@@ -34,3 +34,20 @@ A connected Harness Web page is required to verify actual slot rendering and the
 ## Data safety notes
 
 This is a derived convenience cache, not a replacement for the session log. Keep memory content short and non-sensitive. Deletes are soft deletes so users can recover them; the access log records operation, scope, success, and timestamp without copying secret content.
+
+## 验证状态（DSH 0.2.1-rc.2）
+
+- Host bundle 已在当前 profile 中 `application: applied`，`fiberPhase: active`。
+- Client 已注册到实时插槽：`sidebar.panellist`（面板图标）与 `main`（面板主体）的 occupants 中可见本插件 id。
+- Client 只使用 `--dsw-alias-*` 主题 token、`ctx.connection.rpc`、`ctx.slots`、`ctx.locale`，不写 DOM、不导入 DSH Client 包。
+- 单元测试与 `node --check` 通过（见下表）。
+
+### 关于界面截图
+
+本机在编写本文件时处于锁屏/无图形会话状态，`screencapture` 只能得到锁屏画面，因此仓库中**没有伪造的截图或 mock 图**。解锁 DSH 后可在实际界面中截图并按下面步骤替换本节：
+
+1. 打开左侧栏对应的面板图标；
+2. 浅色与深色主题各截一张，窗口宽度分别取 1280px 与 375px；
+3. 将图片放到 `docs/screenshots/` 并在本文件引用。
+
+面板内容：启用/自动保存开关、搜索、新增记忆、来源与版本信息、删除与恢复、空态与错误提示。

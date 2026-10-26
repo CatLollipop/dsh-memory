@@ -1,43 +1,66 @@
 window.__ModuleLoader__.load({
-  id: '@local/dsh_memory',
+  id: '@local/dsh-memory',
   factory(require) {
     const React = require('react');
     const h = React.createElement;
-    const ENDPOINT = 'dsh_memory';
+    const ENDPOINT = 'dsh-memory';
 
-    function translate(locale, key, fallback) {
-      try {
-        if (locale?.t) return locale.t(key) || fallback;
-        if (locale?.get) return locale.get(key) || fallback;
-      } catch (_) { /* use fallback */ }
-      return fallback;
+    const zh = {
+      title: '记忆', description: '保存有用且限定范围的笔记，之后可随时引用。密码、令牌、密钥、卡号等敏感内容永远不会被保存。',
+      enabled: '启用记忆', autoSave: '自动保存', showDeleted: '显示已删除', search: '搜索', save: '保存', delete: '删除', restore: '恢复',
+      placeholder: '写一条记忆…', sourcePlaceholder: '来源（可选）', searchPlaceholder: '搜索记忆', empty: '还没有记忆，先在上方添加一条。',
+      loading: '加载中…', deleted: '已删除', manual: '手动', failed: '操作失败：', unavailable: '无法连接宿主，请刷新页面。',
+      stats: (total, revisions) => `${total} 条记忆 · ${revisions} 个版本`,
+    };
+    const en = {
+      title: 'Memory', description: 'Save useful, scoped notes for later. Sensitive content such as passwords, tokens, secrets, and card numbers is never stored.',
+      enabled: 'Memory enabled', autoSave: 'Automatic saving', showDeleted: 'Show deleted', search: 'Search', save: 'Save', delete: 'Delete', restore: 'Restore',
+      placeholder: 'Write a memory…', sourcePlaceholder: 'Source (optional)', searchPlaceholder: 'Search memories', empty: 'No memories yet. Add a short note above.',
+      loading: 'Loading…', deleted: 'Deleted', manual: 'Manual', failed: 'Something went wrong: ', unavailable: 'Cannot reach the host. Refresh the page.',
+      stats: (total, revisions) => `${total} saved · ${revisions} revisions`,
+    };
+
+    function translate(ctx, key, ...args) {
+      let active = 'en';
+      try { active = String(ctx.locale?.getSnapshot?.()?.active || 'en'); } catch {}
+      const dict = active.toLowerCase().startsWith('zh') ? zh : en;
+      const value = dict[key] ?? en[key] ?? key;
+      return typeof value === 'function' ? value(...args) : value;
     }
 
     async function callRpc(connection, payload) {
       const rpc = connection?.rpc;
-      if (!rpc) throw new Error('Memory connection is unavailable.');
-      if (typeof rpc.call === 'function') return rpc.call(ENDPOINT, payload);
-      if (typeof rpc.request === 'function') return rpc.request(ENDPOINT, payload);
-      if (typeof rpc.invoke === 'function') return rpc.invoke(ENDPOINT, payload);
-      throw new Error('Memory RPC is unavailable.');
+      if (!rpc?.call) throw new Error('Host connection unavailable.');
+      const reply = await rpc.call('/api', ENDPOINT, payload);
+      if (reply?.ok === false) throw new Error(reply.error?.message || 'Memory request failed.');
+      if (reply && typeof reply === 'object' && 'value' in reply) return reply.value;
+      return reply;
     }
 
-    function Button({ children, onClick, disabled, danger = false }) {
-      return h('button', { type: 'button', onClick, disabled, style: {
-        border: '1px solid var(--dsw-alias-border-color, rgba(127,127,127,.28))', borderRadius: 8,
-        padding: '7px 11px', background: danger ? 'var(--dsw-alias-danger-bg, transparent)' : 'var(--dsw-alias-control-bg, transparent)',
-        color: danger ? 'var(--dsw-alias-danger-fg, var(--dsw-alias-text-color, inherit))' : 'var(--dsw-alias-text-color, inherit)', cursor: disabled ? 'default' : 'pointer', opacity: disabled ? .55 : 1,
-      } }, children);
-    }
+    const styles = {
+      page: { color: 'var(--dsw-alias-label-primary)', background: 'var(--dsw-alias-bg-base)', minHeight: '100%', padding: '24px 28px 40px', boxSizing: 'border-box' },
+      wrap: { maxWidth: 880, margin: '0 auto', display: 'flex', flexDirection: 'column', gap: 18 },
+      head: { display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 16 },
+      title: { margin: 0, fontSize: 22, fontWeight: 600, lineHeight: 1.3 },
+      sub: { margin: '6px 0 0', fontSize: 13, lineHeight: 1.6, color: 'var(--dsw-alias-label-secondary)', maxWidth: 640 },
+      card: { background: 'var(--dsw-alias-bg-layer-1)', border: '1px solid var(--dsw-alias-border-l1)', borderRadius: 12, padding: 16 },
+      row: { display: 'flex', alignItems: 'center', gap: 14, flexWrap: 'wrap' },
+      toggle: { display: 'flex', alignItems: 'center', gap: 8, fontSize: 13, color: 'var(--dsw-alias-label-primary)', cursor: 'pointer' },
+      meta: { fontSize: 12.5, color: 'var(--dsw-alias-label-secondary)' },
+      input: { width: '100%', boxSizing: 'border-box', borderRadius: 8, padding: '9px 11px', color: 'var(--dsw-alias-label-primary)', background: 'var(--dsw-alias-bg-layer-2)', border: '1px solid var(--dsw-alias-border-l1)', fontSize: 13.5, outline: 'none' },
+      primary: { border: 0, borderRadius: 8, padding: '8px 14px', fontSize: 13, fontWeight: 500, cursor: 'pointer', color: 'var(--dsw-alias-bg-base)', background: 'var(--dsw-alias-brand-primary)' },
+      ghost: { border: '1px solid var(--dsw-alias-border-l2)', background: 'transparent', color: 'var(--dsw-alias-label-primary)', borderRadius: 8, padding: '7px 12px', fontSize: 13, cursor: 'pointer' },
+      danger: { border: '1px solid var(--dsw-alias-border-l2)', background: 'transparent', color: 'var(--dsw-alias-state-error-primary)', borderRadius: 8, padding: '7px 12px', fontSize: 13, cursor: 'pointer' },
+      disabled: { opacity: .55, cursor: 'default' },
+      error: { role: 'alert', padding: '10px 12px', borderRadius: 8, fontSize: 13, color: 'var(--dsw-alias-state-error-primary)', background: 'var(--dsw-alias-bg-layer-2)', border: '1px solid var(--dsw-alias-state-error-primary)' },
+      empty: { padding: '34px 12px', textAlign: 'center', fontSize: 13.5, color: 'var(--dsw-alias-label-secondary)', border: '1px dashed var(--dsw-alias-border-l1)', borderRadius: 10 },
+      item: { border: '1px solid var(--dsw-alias-border-l1)', background: 'var(--dsw-alias-bg-layer-1)', borderRadius: 10, padding: 14, display: 'flex', flexDirection: 'column', gap: 9 },
+      itemText: { whiteSpace: 'pre-wrap', lineHeight: 1.55, fontSize: 13.5 },
+      itemMeta: { display: 'flex', gap: 10, flexWrap: 'wrap', fontSize: 12, color: 'var(--dsw-alias-label-secondary)' },
+      chip: { padding: '1px 8px', borderRadius: 999, border: '1px solid var(--dsw-alias-border-l1)', fontSize: 11.5 },
+    };
 
-    function Sidebar({ onOpen, active }) {
-      return h('button', { type: 'button', onClick: onOpen, 'aria-current': active ? 'page' : undefined, style: {
-        width: '100%', display: 'flex', alignItems: 'center', gap: 9, border: 0, borderRadius: 8, padding: '9px 12px',
-        background: active ? 'var(--dsw-alias-selected-bg, rgba(127,127,127,.15))' : 'transparent', color: 'var(--dsw-alias-text-color, inherit)', textAlign: 'left', cursor: 'pointer',
-      } }, h('span', { 'aria-hidden': true }, '🧠'), h('span', null, 'Memory'));
-    }
-
-    function MemoryPanel({ connection, locale, onClose }) {
+    function MemoryPanel({ ctx }) {
       const [items, setItems] = React.useState([]);
       const [status, setStatus] = React.useState(null);
       const [query, setQuery] = React.useState('');
@@ -46,30 +69,41 @@ window.__ModuleLoader__.load({
       const [error, setError] = React.useState('');
       const [busy, setBusy] = React.useState(false);
       const [showDeleted, setShowDeleted] = React.useState(false);
+      const [, tick] = React.useState(0);
 
-      const refresh = React.useCallback(async (nextQuery = query) => {
+      React.useEffect(() => {
+        let stop;
+        try { stop = ctx.locale?.subscribe?.(() => tick((n) => n + 1)); } catch {}
+        return () => { try { stop?.(); } catch {} };
+      }, []);
+
+      const t = (key, ...args) => translate(ctx, key, ...args);
+
+      const refresh = React.useCallback(async () => {
         setBusy(true); setError('');
         try {
           const [listResult, statusResult] = await Promise.all([
-            callRpc(connection, nextQuery.trim() ? { action: 'search', query: nextQuery, includeDeleted: showDeleted } : { action: 'list', includeDeleted: showDeleted }),
-            callRpc(connection, { action: 'status' }),
+            callRpc(ctx.connection, query.trim() ? { action: 'search', query, includeDeleted: showDeleted } : { action: 'list', includeDeleted: showDeleted }),
+            callRpc(ctx.connection, { action: 'status' }),
           ]);
-          if (!listResult?.ok) throw new Error(listResult.error?.message || 'Unable to load memories.');
-          if (!statusResult?.ok) throw new Error(statusResult.error?.message || 'Unable to load memory status.');
-          setItems(listResult.value || []); setStatus(statusResult.value || null);
-        } catch (cause) { setError(cause?.message || 'Unable to load memories.'); }
-        finally { setBusy(false); }
-      }, [connection, query, showDeleted]);
+          if (!listResult?.ok) throw new Error(listResult.error?.message || t('failed'));
+          if (!statusResult?.ok) throw new Error(statusResult.error?.message || t('failed'));
+          setItems(listResult.value || []);
+          setStatus(statusResult.value || null);
+        } catch (cause) {
+          setError(cause?.message || t('unavailable'));
+        } finally { setBusy(false); }
+      }, [query, showDeleted]);
 
-      React.useEffect(() => { refresh(''); }, []);
+      React.useEffect(() => { refresh(); }, []);
 
       async function action(payload) {
         setBusy(true); setError('');
         try {
-          const result = await callRpc(connection, payload);
-          if (!result?.ok) throw new Error(result.error?.message || 'Memory action failed.');
+          const result = await callRpc(ctx.connection, payload);
+          if (!result?.ok) throw new Error(result.error?.message || t('failed'));
           await refresh();
-        } catch (cause) { setError(cause?.message || 'Memory action failed.'); }
+        } catch (cause) { setError(cause?.message || t('failed')); }
         finally { setBusy(false); }
       }
 
@@ -80,42 +114,62 @@ window.__ModuleLoader__.load({
         setContent(''); setSource('');
       }
 
-      return h('section', { style: { color: 'var(--dsw-alias-text-color, inherit)', background: 'var(--dsw-alias-surface-bg, transparent)', minHeight: '100%', padding: 24, maxWidth: 900, boxSizing: 'border-box' } },
-        h('header', { style: { display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 16, marginBottom: 18 } },
-          h('div', null, h('h1', { style: { fontSize: 22, margin: 0 } }, translate(locale, 'memory.title', 'Memory')), h('p', { style: { margin: '7px 0 0', lineHeight: 1.5, color: 'var(--dsw-alias-secondary-text-color, inherit)', maxWidth: 650 } }, translate(locale, 'memory.description', 'Save useful, scoped notes for later. Sensitive content such as passwords, tokens, secrets, and card numbers is never stored.'))),
-          onClose && h(Button, { onClick: onClose }, translate(locale, 'common.close', 'Close'))
-        ),
-        h('div', { style: { display: 'flex', alignItems: 'center', gap: 14, flexWrap: 'wrap', borderBottom: '1px solid var(--dsw-alias-border-color, rgba(127,127,127,.2))', paddingBottom: 14, marginBottom: 18 } },
-          h('label', { style: { display: 'flex', alignItems: 'center', gap: 8, cursor: 'pointer' } }, h('input', { type: 'checkbox', checked: Boolean(status?.enabled), onChange: (event) => action({ action: 'toggle_policy', enabled: event.target.checked }) }), translate(locale, 'memory.enabled', 'Memory enabled')),
-          h('label', { style: { display: 'flex', alignItems: 'center', gap: 8, cursor: 'pointer' } }, h('input', { type: 'checkbox', checked: status?.autoSave !== false, onChange: (event) => action({ action: 'toggle_policy', autoSave: event.target.checked }) }), translate(locale, 'memory.autoSave', 'Automatic saving')),
-          h('span', { style: { fontSize: 13, color: 'var(--dsw-alias-secondary-text-color, inherit)' } }, status ? `${status.total} saved · ${status.revisions} revisions` : translate(locale, 'common.loading', 'Loading…')),
-          h('label', { style: { display: 'flex', alignItems: 'center', gap: 7, marginLeft: 'auto', fontSize: 13 } }, h('input', { type: 'checkbox', checked: showDeleted, onChange: (event) => { setShowDeleted(event.target.checked); } }), translate(locale, 'memory.showDeleted', 'Show deleted'))
-        ),
-        h('form', { onSubmit: create, style: { display: 'grid', gap: 8, marginBottom: 20 } },
-          h('textarea', { value: content, onChange: (event) => setContent(event.target.value), placeholder: translate(locale, 'memory.placeholder', 'Write a memory…'), rows: 3, style: { width: '100%', boxSizing: 'border-box', resize: 'vertical', borderRadius: 8, padding: 10, color: 'var(--dsw-alias-text-color, inherit)', background: 'var(--dsw-alias-input-bg, transparent)', border: '1px solid var(--dsw-alias-border-color, rgba(127,127,127,.3))' } }),
-          h('div', { style: { display: 'flex', gap: 8, alignItems: 'center' } }, h('input', { value: source, onChange: (event) => setSource(event.target.value), placeholder: translate(locale, 'memory.sourcePlaceholder', 'Source (optional)'), style: { flex: 1, borderRadius: 8, padding: 8, color: 'var(--dsw-alias-text-color, inherit)', background: 'var(--dsw-alias-input-bg, transparent)', border: '1px solid var(--dsw-alias-border-color, rgba(127,127,127,.3))' } }), h(Button, { disabled: busy || !content.trim() }, translate(locale, 'common.save', 'Save')))
-        ),
-        h('div', { style: { display: 'flex', gap: 8, marginBottom: 14 } }, h('input', { value: query, onChange: (event) => setQuery(event.target.value), onKeyDown: (event) => { if (event.key === 'Enter') refresh(); }, placeholder: translate(locale, 'memory.searchPlaceholder', 'Search memories'), style: { flex: 1, borderRadius: 8, padding: 8, color: 'var(--dsw-alias-text-color, inherit)', background: 'var(--dsw-alias-input-bg, transparent)', border: '1px solid var(--dsw-alias-border-color, rgba(127,127,127,.3))' } }), h(Button, { onClick: () => refresh(), disabled: busy }, translate(locale, 'common.search', 'Search'))),
-        error && h('div', { role: 'alert', style: { padding: 10, marginBottom: 12, borderRadius: 8, color: 'var(--dsw-alias-danger-fg, inherit)', background: 'var(--dsw-alias-danger-bg, rgba(180,40,40,.12))' } }, error),
-        !busy && !items.length && h('div', { style: { padding: '30px 12px', textAlign: 'center', color: 'var(--dsw-alias-secondary-text-color, inherit)' } }, translate(locale, 'memory.empty', 'No memories yet. Add a short note above.')),
-        h('div', { style: { display: 'grid', gap: 10 } }, items.map((item) => h('article', { key: item.id, style: { border: '1px solid var(--dsw-alias-border-color, rgba(127,127,127,.2))', borderRadius: 10, padding: 13, opacity: item.deletedAt ? .62 : 1 } },
-          h('div', { style: { whiteSpace: 'pre-wrap', lineHeight: 1.5 } }, item.content),
-          h('div', { style: { display: 'flex', gap: 10, flexWrap: 'wrap', marginTop: 9, fontSize: 12, color: 'var(--dsw-alias-secondary-text-color, inherit)' } }, h('span', null, item.source?.label || item.source?.kind || translate(locale, 'memory.manual', 'Manual')), h('span', null, `v${item.revision || 1}`), h('span', null, new Date(item.updatedAt).toLocaleString()), item.deletedAt && h('span', null, translate(locale, 'memory.deleted', 'Deleted'))),
-          h('div', { style: { display: 'flex', gap: 7, marginTop: 10 } }, item.deletedAt ? h(Button, { onClick: () => action({ action: 'restore', id: item.id }), disabled: busy }, translate(locale, 'common.restore', 'Restore')) : h(Button, { onClick: () => action({ action: 'delete', id: item.id }), disabled: busy, danger: true }, translate(locale, 'common.delete', 'Delete')))
-        )))
+      return h('div', { style: styles.page },
+        h('div', { style: styles.wrap },
+          h('header', { style: styles.head },
+            h('div', null,
+              h('h1', { style: styles.title }, t('title')),
+              h('p', { style: styles.sub }, t('description'))),
+            h('span', { style: { ...styles.chip, padding: '3px 10px', color: 'var(--dsw-alias-label-secondary)' } },
+              status ? t('stats', status.total, status.revisions) : t('loading'))),
+          error ? h('div', { style: styles.error }, error) : null,
+          h('section', { style: styles.card },
+            h('div', { style: { ...styles.row, marginBottom: 14 } },
+              h('label', { style: styles.toggle },
+                h('input', { type: 'checkbox', checked: status?.enabled !== false, disabled: busy, onChange: (e) => action({ action: 'toggle_policy', enabled: e.target.checked }) }),
+                t('enabled')),
+              h('label', { style: styles.toggle },
+                h('input', { type: 'checkbox', checked: status?.autoSave !== false, disabled: busy, onChange: (e) => action({ action: 'toggle_policy', autoSave: e.target.checked }) }),
+                t('autoSave')),
+              h('label', { style: { ...styles.toggle, marginLeft: 'auto' } },
+                h('input', { type: 'checkbox', checked: showDeleted, onChange: (e) => setShowDeleted(e.target.checked) }),
+                t('showDeleted'))),
+            h('form', { onSubmit: create, style: { display: 'flex', flexDirection: 'column', gap: 9 } },
+              h('textarea', { value: content, rows: 3, placeholder: t('placeholder'), onChange: (e) => setContent(e.target.value), style: { ...styles.input, resize: 'vertical', minHeight: 74 } }),
+              h('div', { style: { display: 'flex', gap: 8 } },
+                h('input', { value: source, placeholder: t('sourcePlaceholder'), onChange: (e) => setSource(e.target.value), style: styles.input }),
+                h('button', { type: 'submit', disabled: busy || !content.trim(), style: { ...styles.primary, ...(busy || !content.trim() ? styles.disabled : {}) } }, t('save'))))),
+          h('div', { style: { display: 'flex', gap: 8 } },
+            h('input', { value: query, placeholder: t('searchPlaceholder'), onChange: (e) => setQuery(e.target.value), onKeyDown: (e) => { if (e.key === 'Enter') refresh(); }, style: styles.input }),
+            h('button', { type: 'button', disabled: busy, onClick: refresh, style: { ...styles.ghost, ...(busy ? styles.disabled : {}) } }, t('search'))),
+          !busy && !items.length ? h('div', { style: styles.empty }, t('empty')) : null,
+          h('div', { style: { display: 'flex', flexDirection: 'column', gap: 10 } },
+            items.map((item) => h('article', { key: item.id, style: { ...styles.item, opacity: item.deletedAt ? .62 : 1 } },
+              h('div', { style: styles.itemText }, item.content),
+              h('div', { style: styles.itemMeta },
+                h('span', { style: styles.chip }, item.source?.label || item.source?.kind || t('manual')),
+                h('span', null, `v${item.revision || 1}`),
+                h('span', null, new Date(item.updatedAt).toLocaleString()),
+                item.deletedAt ? h('span', null, t('deleted')) : null),
+              h('div', { style: { display: 'flex', gap: 8 } },
+                item.deletedAt
+                  ? h('button', { type: 'button', disabled: busy, onClick: () => action({ action: 'restore', id: item.id }), style: styles.ghost }, t('restore'))
+                  : h('button', { type: 'button', disabled: busy, onClick: () => action({ action: 'delete', id: item.id }), style: styles.danger }, t('delete')))))))
       );
+    }
+
+    function SidebarEntry({ size = 20 }) {
+      return h('span', { style: { fontSize: Math.max(13, size * 0.74), lineHeight: 1 }, 'aria-hidden': 'true' }, '🧠');
     }
 
     return {
       inject: ['connection', 'locale', 'slots'],
       apply(ctx) {
-        let open = true;
-        let panelDisposer;
-        const SidebarEntry = () => h(Sidebar, { active: open, onOpen: () => { open = true; } });
-        const MainEntry = () => h(MemoryPanel, { connection: ctx.connection, locale: ctx.locale });
-        ctx.slots.inject('sidebar.panellist', () => ctx.slots.register({ name: 'sidebar.panellist', id: 'dsh_memory', key: 'dsh_memory', order: 30, title: 'Memory', icon: '🧠' }, SidebarEntry));
-        panelDisposer = ctx.slots.inject('main', () => ctx.slots.register({ name: 'main', id: 'dsh_memory', key: 'dsh_memory', order: 30, title: 'Memory' }, MainEntry));
-        ctx.effect?.(() => { if (typeof panelDisposer === 'function') panelDisposer(); });
+        ctx.effect(() => {
+          const d1 = ctx.slots.inject('sidebar.panellist', () => ctx.slots.register({ name: 'sidebar.panellist', id: 'dsh-memory', order: 34, label: () => 'Memory' }, (props) => h(SidebarEntry, props || {})));
+          const d2 = ctx.slots.inject('main', () => ctx.slots.register({ name: 'main', key: 'dsh-memory' }, () => h(MemoryPanel, { ctx })));
+          return () => { try { d1?.(); } catch {} try { d2?.(); } catch {} };
+        });
       },
     };
   },
