@@ -211,7 +211,8 @@ window.__ModuleLoader__.load({
         } catch { setError(t('failed')); }
       }
 
-      return h('div', { style: { display: 'flex', flexDirection: 'column', gap: 18, maxWidth: 720 } },
+      return h(React.Fragment, null,
+        h('div', { style: { display: 'flex', flexDirection: 'column', gap: 18, maxWidth: 720 } },
         h('header', null,
           h('h2', { style: { margin: 0, fontSize: 18, fontWeight: 600 } }, t('settingsTitle')),
           h('p', { style: { margin: '6px 0 0', fontSize: 13, lineHeight: 1.6, color: 'var(--dsw-alias-label-secondary)' } }, t('settingsDesc'))),
@@ -233,7 +234,8 @@ window.__ModuleLoader__.load({
             confirmClear
               ? h('button', { type: 'button', disabled: busy, onClick: async () => { await act({ action: 'clear', confirm: true }, t('cleared')); setConfirmClear(false); }, style: styles.danger }, t('clearConfirm'))
               : h('button', { type: 'button', disabled: busy || !status?.total, onClick: () => setConfirmClear(true), style: { ...styles.danger, ...(busy || !status?.total ? styles.disabled : {}) } }, t('clear'))),
-          confirmClear ? h('button', { type: 'button', onClick: () => setConfirmClear(false), style: { border: 0, background: 'none', padding: 0, fontSize: 12.5, color: 'var(--dsw-alias-label-secondary)', cursor: 'pointer', textAlign: 'left' } }, t('clearCancel')) : null));
+          confirmClear ? h('button', { type: 'button', onClick: () => setConfirmClear(false), style: { border: 0, background: 'none', padding: 0, fontSize: 12.5, color: 'var(--dsw-alias-label-secondary)', cursor: 'pointer', textAlign: 'left' } }, t('clearCancel')) : null)),
+        h(MemoryPanel, { ctx }));
     }
 
     function SidebarEntry({ size = 20 }) {
@@ -244,10 +246,8 @@ window.__ModuleLoader__.load({
       inject: ['connection', 'locale', 'slots'],
       apply(ctx) {
         ctx.effect(() => {
-          const d1 = ctx.slots.inject('sidebar.panellist', () => ctx.slots.register({ name: 'sidebar.panellist', id: 'dsh-memory', order: 34, label: () => 'Memory' }, (props) => h(SidebarEntry, props || {})));
-          const d2 = ctx.slots.inject('main', () => ctx.slots.register({ name: 'main', key: 'dsh-memory' }, () => h(MemoryPanel, { ctx })));
-          const d3 = ctx.slots.inject('settings.section', () => ctx.slots.register({ name: 'settings.section', id: 'memory', order: 36, label: () => 'Memory' }, () => h(SettingsPage, { ctx })));
-          return () => { try { d1?.(); } catch {} try { d2?.(); } catch {} try { d3?.(); } catch {} };
+          const section = ctx.slots.inject('settings.section', () => ctx.slots.register({ name: 'settings.section', id: 'memory', order: 36, label: () => 'Memory' }, () => h(SettingsPage, { ctx })));
+          return () => { try { section?.(); } catch {} };
         });
       },
     };
