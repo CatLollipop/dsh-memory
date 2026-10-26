@@ -1,6 +1,6 @@
 import { MemoryRepository, handleRpc, normalizeScope } from './rpc.js';
 
-const ENDPOINT = 'dsh-memory';
+const ENDPOINT = 'dsh_memory';
 const permissive = { safeParse(value) { return { success: true, data: value }; }, parse(value) { return value; } };
 
 class LocalDomain {

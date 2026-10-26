@@ -1,9 +1,9 @@
 window.__ModuleLoader__.load({
-  id: '@local/dsh-memory',
+  id: '@local/dsh_memory',
   factory(require) {
     const React = require('react');
     const h = React.createElement;
-    const ENDPOINT = 'dsh-memory';
+    const ENDPOINT = 'dsh_memory';
 
     function translate(locale, key, fallback) {
       try {
@@ -113,8 +113,8 @@ window.__ModuleLoader__.load({
         let panelDisposer;
         const SidebarEntry = () => h(Sidebar, { active: open, onOpen: () => { open = true; } });
         const MainEntry = () => h(MemoryPanel, { connection: ctx.connection, locale: ctx.locale });
-        ctx.slots.inject('sidebar.panellist', () => ctx.slots.register({ name: 'sidebar.panellist', id: 'dsh-memory', key: 'dsh-memory', order: 30, title: 'Memory', icon: '🧠' }, SidebarEntry));
-        panelDisposer = ctx.slots.inject('main', () => ctx.slots.register({ name: 'main', id: 'dsh-memory', key: 'dsh-memory', order: 30, title: 'Memory' }, MainEntry));
+        ctx.slots.inject('sidebar.panellist', () => ctx.slots.register({ name: 'sidebar.panellist', id: 'dsh_memory', key: 'dsh_memory', order: 30, title: 'Memory', icon: '🧠' }, SidebarEntry));
+        panelDisposer = ctx.slots.inject('main', () => ctx.slots.register({ name: 'main', id: 'dsh_memory', key: 'dsh_memory', order: 30, title: 'Memory' }, MainEntry));
         ctx.effect?.(() => { if (typeof panelDisposer === 'function') panelDisposer(); });
       },
     };
