@@ -44,17 +44,28 @@ export function apply(ctx) {
         invalidRecords: 'backup-and-skip',
         tables: Object.fromEntries(TABLES.map((table) => [table, { valueSchema: permissive }])),
       };
-      try {
-        domain = await storageDomain.open(spec);
-        owned = true;
-      } catch (error) {
-        const existing = storageDomain.get?.('dsh_memory');
-        if (existing && (error?.code === 'already-open' || /already open/i.test(String(error?.message)))) {
-          domain = existing;
-        } else {
-          throw error;
+      // A fast disable→enable cycle can still be releasing the previous domain:
+      // wait for that close, then retry the open so we never reuse stale state.
+      const previous = globalThis.__DSH_MEMORY_CLOSING__;
+      if (previous) await previous.catch(() => {});
+      let lastError;
+      for (let attempt = 0; attempt < 6; attempt += 1) {
+        try {
+          domain = await storageDomain.open(spec);
+          owned = true;
+          lastError = undefined;
+          break;
+        } catch (error) {
+          lastError = error;
+          if (error?.code !== 'already-open' && !/already open/i.test(String(error?.message))) throw error;
+          await new Promise((resolve) => setTimeout(resolve, 120 * (attempt + 1)));
         }
       }
+      if (!domain) {
+        const existing = storageDomain.get?.('dsh_memory');
+        if (existing) { domain = existing; lastError = undefined; }
+      }
+      if (lastError) throw lastError;
     }
     return new MemoryRepository(domain, {});
   })();
@@ -116,7 +127,9 @@ export function apply(ctx) {
   ctx.effect(() => () => {
     try { disposeRoute?.(); } catch {}
     try { disposeTool?.(); } catch {}
-    if (owned && domain) Promise.resolve(domain.close()).catch(() => {});
+    if (owned && domain) {
+      globalThis.__DSH_MEMORY_CLOSING__ = Promise.resolve(domain.close()).catch(() => {});
+    }
   });
 }
 
