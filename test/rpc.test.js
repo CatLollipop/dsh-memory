@@ -41,3 +41,20 @@ test('policy can disable writes and automatic saves', async () => {
   const result = await handleRpc(repo, { action: 'create', content: 'blocked' }, { id: 'peer-a' });
   assert.equal(result.error.code, 'POLICY_DISABLED');
 });
+
+test('settings actions export and clear all memories for one scope', async () => {
+  const repo = new MemoryRepository(new Domain());
+  const peer = { id: 'peer-a' };
+  await handleRpc(repo, { action: 'create', content: 'note one' }, peer);
+  await handleRpc(repo, { action: 'create', content: 'note two' }, peer);
+  const exported = await handleRpc(repo, { action: 'export' }, peer);
+  assert.equal(exported.ok, true);
+  assert.equal(exported.value.items.length, 2);
+  const refused = await handleRpc(repo, { action: 'clear' }, peer);
+  assert.equal(refused.error.code, 'CONFIRM_REQUIRED');
+  const cleared = await handleRpc(repo, { action: 'clear', confirm: true }, peer);
+  assert.equal(cleared.ok, true);
+  assert.equal(cleared.value.removed, 2);
+  const after = await handleRpc(repo, { action: 'list', includeDeleted: true }, peer);
+  assert.equal(after.value.length, 0);
+});

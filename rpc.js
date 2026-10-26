@@ -160,6 +160,27 @@ export class MemoryRepository {
     return { ok: true, value };
   }
 
+  async clear(scope, payload = {}) {
+    if (payload.confirm !== true) return error('CONFIRM_REQUIRED', '清空记忆需要确认。');
+    let removed = 0;
+    for (const [key, item] of [...this.items.entries()]) {
+      if (item?.scope === scope) { await this.items.delete(key); removed += 1; }
+    }
+    for (const [key, row] of [...this.sources.entries()]) {
+      if (row?.scope === scope) await this.sources.delete(key);
+    }
+    for (const [key, row] of [...this.revisions.entries()]) {
+      if (row?.scope === scope) await this.revisions.delete(key);
+    }
+    await this.log(scope, 'clear', true, { removed });
+    return { ok: true, value: { removed } };
+  }
+
+  async exportAll(scope) {
+    const values = tableValues(this.items).filter((item) => item.scope === scope);
+    return { ok: true, value: { exportedAt: new Date().toISOString(), scope, items: values } };
+  }
+
   async togglePolicy(scope, payload = {}) {
     const current = await this.policy(scope);
     const next = { ...current, enabled: payload.enabled === undefined ? (payload.autoSave === undefined ? !current.enabled : current.enabled) : Boolean(payload.enabled), autoSave: payload.autoSave === undefined ? current.autoSave : Boolean(payload.autoSave) };
@@ -179,6 +200,8 @@ export class MemoryRepository {
       if (action === 'delete') return this.remove(scope, payload);
       if (action === 'restore') return this.restore(scope, payload);
       if (action === 'toggle_policy') return this.togglePolicy(scope, payload);
+      if (action === 'clear') return this.clear(scope, payload);
+      if (action === 'export') return this.exportAll(scope);
       return error('UNKNOWN_ACTION', `Unsupported memory action: ${action}`);
     } catch (cause) {
       await this.log(scope, action, false, { message: cause?.message || String(cause) });

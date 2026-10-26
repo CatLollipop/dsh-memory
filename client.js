@@ -11,6 +11,9 @@ window.__ModuleLoader__.load({
       placeholder: '写一条记忆…', sourcePlaceholder: '来源（可选）', searchPlaceholder: '搜索记忆', empty: '还没有记忆，先在上方添加一条。',
       loading: '加载中…', deleted: '已删除', manual: '手动', failed: '操作失败：', unavailable: '无法连接宿主，请刷新页面。',
       stats: (total, revisions) => `${total} 条记忆 · ${revisions} 个版本`,
+      settingsTitle: '记忆设置', settingsDesc: '在这里启用或停用记忆、导出或清空全部记忆。新增、编辑、删除单条记忆仍在左侧「Memory」面板中完成。',
+      dataTitle: '记忆数据', dataDesc: '导出会得到 JSON 备份；清空会永久删除全部记忆、来源与历史版本，且不可恢复。',
+      export: '导出 JSON', exported: '已导出记忆备份。', clear: '清空全部记忆', clearConfirm: '确认清空（不可恢复）', clearCancel: '取消清空', cleared: '记忆已清空。',
     };
     const en = {
       title: 'Memory', description: 'Save useful, scoped notes for later. Sensitive content such as passwords, tokens, secrets, and card numbers is never stored.',
@@ -18,6 +21,9 @@ window.__ModuleLoader__.load({
       placeholder: 'Write a memory…', sourcePlaceholder: 'Source (optional)', searchPlaceholder: 'Search memories', empty: 'No memories yet. Add a short note above.',
       loading: 'Loading…', deleted: 'Deleted', manual: 'Manual', failed: 'Something went wrong: ', unavailable: 'Cannot reach the host. Refresh the page.',
       stats: (total, revisions) => `${total} saved · ${revisions} revisions`,
+      settingsTitle: 'Memory settings', settingsDesc: 'Enable or disable memory, export a backup, or clear every memory. Adding and editing individual memories stays in the Memory panel.',
+      dataTitle: 'Memory data', dataDesc: 'Export downloads a JSON backup; clearing permanently deletes every memory, source, and revision.',
+      export: 'Export JSON', exported: 'Memory backup exported.', clear: 'Clear all memories', clearConfirm: 'Confirm clear (cannot undo)', clearCancel: 'Cancel', cleared: 'All memories cleared.',
     };
 
     function translate(ctx, key, ...args) {
@@ -158,6 +164,78 @@ window.__ModuleLoader__.load({
       );
     }
 
+    function SettingsPage({ ctx }) {
+      const [status, setStatus] = React.useState(null);
+      const [busy, setBusy] = React.useState(false);
+      const [error, setError] = React.useState('');
+      const [notice, setNotice] = React.useState('');
+      const [confirmClear, setConfirmClear] = React.useState(false);
+      const t = (key, ...args) => translate(ctx, key, ...args);
+
+      const load = React.useCallback(async () => {
+        setBusy(true); setError('');
+        try {
+          const result = await callRpc(ctx.connection, { action: 'status' });
+          if (!result?.ok) throw new Error(result?.error?.message || t('failed'));
+          setStatus(result.value || null);
+        } catch (cause) { setError(cause?.message || t('unavailable')); }
+        finally { setBusy(false); }
+      }, []);
+
+      React.useEffect(() => { load(); }, []);
+
+      async function act(payload, message) {
+        setBusy(true); setError(''); setNotice('');
+        try {
+          const result = await callRpc(ctx.connection, payload);
+          if (!result?.ok) throw new Error(result?.error?.message || t('failed'));
+          if (message) setNotice(message);
+          await load();
+          return result.value;
+        } catch (cause) { setError(cause?.message || t('failed')); return null; }
+        finally { setBusy(false); }
+      }
+
+      async function exportJson() {
+        const value = await act({ action: 'export' });
+        if (!value) return;
+        try {
+          const blob = new Blob([JSON.stringify(value, null, 2)], { type: 'application/json' });
+          const url = URL.createObjectURL(blob);
+          const link = document.createElement('a');
+          link.href = url;
+          link.download = `dsh-memory-${new Date().toISOString().slice(0, 10)}.json`;
+          link.click();
+          setTimeout(() => URL.revokeObjectURL(url), 4000);
+          setNotice(t('exported'));
+        } catch { setError(t('failed')); }
+      }
+
+      return h('div', { style: { display: 'flex', flexDirection: 'column', gap: 18, maxWidth: 720 } },
+        h('header', null,
+          h('h2', { style: { margin: 0, fontSize: 18, fontWeight: 600 } }, t('settingsTitle')),
+          h('p', { style: { margin: '6px 0 0', fontSize: 13, lineHeight: 1.6, color: 'var(--dsw-alias-label-secondary)' } }, t('settingsDesc'))),
+        error ? h('div', { style: { ...styles.error, padding: '10px 12px', borderRadius: 8, fontSize: 13, color: 'var(--dsw-alias-state-error-primary)', background: 'var(--dsw-alias-bg-layer-2)', border: '1px solid var(--dsw-alias-state-error-primary)' } }, error) : null,
+        notice ? h('div', { role: 'status', style: { fontSize: 13, color: 'var(--dsw-alias-state-success-primary)' } }, notice) : null,
+        h('section', { style: { border: '1px solid var(--dsw-alias-border-l1)', background: 'var(--dsw-alias-bg-layer-1)', borderRadius: 12, padding: 16, display: 'flex', flexDirection: 'column', gap: 12 } },
+          h('label', { style: { display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12, fontSize: 13.5 } },
+            h('span', null, t('enabled')),
+            h('input', { type: 'checkbox', role: 'switch', checked: status?.enabled !== false, disabled: busy, onChange: (e) => act({ action: 'toggle_policy', enabled: e.target.checked }) })),
+          h('label', { style: { display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12, fontSize: 13.5 } },
+            h('span', null, t('autoSave')),
+            h('input', { type: 'checkbox', role: 'switch', checked: status?.autoSave !== false, disabled: busy, onChange: (e) => act({ action: 'toggle_policy', autoSave: e.target.checked }) })),
+          h('p', { style: { margin: 0, fontSize: 12.5, color: 'var(--dsw-alias-label-secondary)' } }, status ? t('stats', status.total, status.revisions) : t('loading'))),
+        h('section', { style: { border: '1px solid var(--dsw-alias-border-l1)', background: 'var(--dsw-alias-bg-layer-1)', borderRadius: 12, padding: 16, display: 'flex', flexDirection: 'column', gap: 10 } },
+          h('strong', { style: { fontSize: 13.5 } }, t('dataTitle')),
+          h('p', { style: { margin: 0, fontSize: 12.5, lineHeight: 1.6, color: 'var(--dsw-alias-label-secondary)' } }, t('dataDesc')),
+          h('div', { style: { display: 'flex', gap: 8, flexWrap: 'wrap' } },
+            h('button', { type: 'button', disabled: busy, onClick: exportJson, style: { ...styles.ghost, ...(busy ? styles.disabled : {}) } }, t('export')),
+            confirmClear
+              ? h('button', { type: 'button', disabled: busy, onClick: async () => { await act({ action: 'clear', confirm: true }, t('cleared')); setConfirmClear(false); }, style: styles.danger }, t('clearConfirm'))
+              : h('button', { type: 'button', disabled: busy || !status?.total, onClick: () => setConfirmClear(true), style: { ...styles.danger, ...(busy || !status?.total ? styles.disabled : {}) } }, t('clear'))),
+          confirmClear ? h('button', { type: 'button', onClick: () => setConfirmClear(false), style: { border: 0, background: 'none', padding: 0, fontSize: 12.5, color: 'var(--dsw-alias-label-secondary)', cursor: 'pointer', textAlign: 'left' } }, t('clearCancel')) : null));
+    }
+
     function SidebarEntry({ size = 20 }) {
       return h('span', { style: { fontSize: Math.max(13, size * 0.74), lineHeight: 1 }, 'aria-hidden': 'true' }, '🧠');
     }
@@ -168,7 +246,8 @@ window.__ModuleLoader__.load({
         ctx.effect(() => {
           const d1 = ctx.slots.inject('sidebar.panellist', () => ctx.slots.register({ name: 'sidebar.panellist', id: 'dsh-memory', order: 34, label: () => 'Memory' }, (props) => h(SidebarEntry, props || {})));
           const d2 = ctx.slots.inject('main', () => ctx.slots.register({ name: 'main', key: 'dsh-memory' }, () => h(MemoryPanel, { ctx })));
-          return () => { try { d1?.(); } catch {} try { d2?.(); } catch {} };
+          const d3 = ctx.slots.inject('settings.section', () => ctx.slots.register({ name: 'settings.section', id: 'memory', order: 36, label: () => 'Memory' }, () => h(SettingsPage, { ctx })));
+          return () => { try { d1?.(); } catch {} try { d2?.(); } catch {} try { d3?.(); } catch {} };
         });
       },
     };

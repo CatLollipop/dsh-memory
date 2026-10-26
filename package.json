@@ -2,7 +2,7 @@
   "name": "@local/dsh-memory",
   "version": "0.2.1-rc.2",
   "private": true,
-  "description": "Scoped, policy-aware memory storage for DSH.",
+  "description": "带来源与版本、策略开关、清空与导出能力的 DSH 记忆插件；写入仅由用户在设置或面板中发起",
   "type": "module",
   "exports": {
     ".": "./index.js",
@@ -11,14 +11,29 @@
     "./locale/*.json": "./locale/*.json",
     "./icon": "./icon.svg"
   },
-  "files": ["index.js", "client.js", "rpc.js", "cordis.patch.yml", "README.md", "locale/*.json", "icon.svg", "test/*.test.js"],
-  "scripts": { "test": "node --test test/*.test.js" },
+  "files": [
+    "index.js",
+    "client.js",
+    "rpc.js",
+    "cordis.patch.yml",
+    "README.md",
+    "locale/*.json",
+    "icon.svg",
+    "test/*.test.js"
+  ],
+  "scripts": {
+    "test": "node --test test/*.test.js"
+  },
   "dsh": {
-    "bundle": { "patch": "./cordis.patch.yml" },
+    "bundle": {
+      "patch": "./cordis.patch.yml"
+    },
     "client": {
       "platform": "web",
       "immediately": true,
-      "inject": ["@deepseek-ai/dsh-client-ui-conversation"]
+      "inject": [
+        "@deepseek-ai/dsh-client-ui-conversation"
+      ]
     }
   }
 }
