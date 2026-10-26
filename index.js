@@ -18,15 +18,6 @@ class LocalDomain {
 
 export const inject = ['connection', 'tools'];
 
-export const Config = {
-  type: 'object',
-  additionalProperties: false,
-  properties: {
-    maxItems: { type: 'integer', minimum: 1, maximum: 10000, default: 500 },
-    maxContentLength: { type: 'integer', minimum: 100, maximum: 100000, default: 12000 },
-  },
-};
-
 export async function apply(ctx, config = {}) {
   const storageDomain = ctx.get?.('storageDomain');
   let domain;
