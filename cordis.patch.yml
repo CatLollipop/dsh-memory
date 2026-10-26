@@ -1,0 +1,6 @@
+- insert:
+    - id: dsh-memory
+      name: '@local/dsh-memory'
+      config:
+        maxItems: 500
+        maxContentLength: 12000

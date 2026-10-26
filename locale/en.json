@@ -1,0 +1,20 @@
+{
+  "meta": {
+    "title": "Memory",
+    "description": "Scoped, policy-aware memory with sensitive-content filtering, sources, revisions, and recovery."
+  },
+  "memory": {
+    "title": "Memory",
+    "description": "Save useful, scoped notes for later. Sensitive content such as passwords, tokens, secrets, and card numbers is never stored.",
+    "enabled": "Memory enabled",
+    "autoSave": "Automatic saving",
+    "showDeleted": "Show deleted",
+    "placeholder": "Write a memory…",
+    "sourcePlaceholder": "Source (optional)",
+    "searchPlaceholder": "Search memories",
+    "empty": "No memories yet. Add a short note above.",
+    "manual": "Manual",
+    "deleted": "Deleted"
+  },
+  "common": { "close": "Close", "loading": "Loading…", "save": "Save", "search": "Search", "restore": "Restore", "delete": "Delete" }
+}

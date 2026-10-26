@@ -1,0 +1,20 @@
+{
+  "meta": {
+    "title": "记忆",
+    "description": "支持作用域隔离、策略控制、敏感内容过滤、来源、版本与恢复的记忆存储。"
+  },
+  "memory": {
+    "title": "记忆",
+    "description": "保存有用的作用域隔离笔记。密码、令牌、密钥、秘密和银行卡号等敏感内容不会被保存。",
+    "enabled": "启用记忆",
+    "autoSave": "自动保存",
+    "showDeleted": "显示已删除",
+    "placeholder": "写下一条记忆……",
+    "sourcePlaceholder": "来源（可选）",
+    "searchPlaceholder": "搜索记忆",
+    "empty": "还没有记忆，请在上方添加一条简短笔记。",
+    "manual": "手动",
+    "deleted": "已删除"
+  },
+  "common": { "close": "关闭", "loading": "加载中……", "save": "保存", "search": "搜索", "restore": "恢复", "delete": "删除" }
+}

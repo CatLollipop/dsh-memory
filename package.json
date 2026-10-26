@@ -1,0 +1,24 @@
+{
+  "name": "@local/dsh-memory",
+  "version": "0.2.1-rc.2",
+  "private": true,
+  "description": "Scoped, policy-aware memory storage for DSH.",
+  "type": "module",
+  "exports": {
+    ".": "./index.js",
+    "./client": "./client.js",
+    "./rpc": "./rpc.js",
+    "./locale/*.json": "./locale/*.json",
+    "./icon": "./icon.svg"
+  },
+  "files": ["index.js", "client.js", "rpc.js", "cordis.patch.yml", "README.md", "locale/*.json", "icon.svg", "test/*.test.js"],
+  "scripts": { "test": "node --test test/*.test.js" },
+  "dsh": {
+    "bundle": { "patch": "./cordis.patch.yml" },
+    "client": {
+      "platform": "web",
+      "immediately": true,
+      "inject": ["@deepseek-ai/dsh-client-ui-conversation"]
+    }
+  }
+}
