@@ -24,7 +24,7 @@ export async function apply(ctx, config = {}) {
   let owned = false;
   if (storageDomain) {
     domain = await storageDomain.open({
-      name: 'dsh-memory',
+      name: 'dsh_memory',
       version: 1,
       layout: 'single',
       invalidRecords: 'backup-and-skip',
