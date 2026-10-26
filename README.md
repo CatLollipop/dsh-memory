@@ -4,8 +4,8 @@ DSH 的轻量记忆插件：保存、检索、查看来源与版本，支持启�
 
 ## 能力
 
-- **设置 → Memory** 页面：启用/停用记忆、自动保存开关、记忆数量与版本统计、导出 JSON、清空全部记忆（两步确认）。
-- 同一设置页内嵌记忆管理区：新增记忆、搜索、来源标签、版本号、删除/恢复、显示已删除、空态与错误提示；不再新增左侧栏图标。
+- **设置 → 插件 → dsh-memory → 配置**：启用/停用记忆、允许自动生成、记忆数量与版本统计、导出 JSON、删除全部记忆（两步确认）。
+- 同一插件配置页下方内嵌“记忆内容”区：新增记忆、搜索、来源标签、版本号、删除/恢复、显示已删除、空态与错误提示；不新增左侧栏图标，也不占用设置左侧独立页。
 - Host 侧使用 `storageDomain` KV（`dsh_memory` 域，`memory_items`/`sources`/`revisions`/`policy`/`access_log` 表）；服务不可用时退回进程内存储，便于本地试跑。
 - 作用域隔离：RPC 按浏览器 peer 归属，工具按 agent/session 归属；不同作用域互不可见。
 - 敏感内容拒绝保存：secret/password/token/api key/私钥/信用卡等字段与取值直接拒绝，并记录一次失败访问日志。
@@ -18,7 +18,7 @@ DSH 的轻量记忆插件：保存、检索、查看来源与版本，支持启�
 plugin_manager({ action: "install_bundle", target: "<本目录绝对路径>" })
 ```
 
-安装后：设置窗口出现 **Memory** 页（含全部管理操作）；不新增左侧栏图标；模型获得只读 `memory` 工具。
+安装后：**设置 → 插件 → dsh-memory → 配置** 打开记忆配置与管理页；不新增左侧栏图标，设置左侧不再有独立 Memory 页；模型获得只读 `memory` 工具。
 
 ## RPC
 
@@ -42,7 +42,7 @@ node --test test/*.test.js
 ## 验证状态（DSH 0.2.1-rc.2）
 
 - Host bundle 在当前 profile 中 `application: applied`，`fiberPhase: active`。
-- Client 只注册到设置窗口的 `settings.section`（id `memory`）；`sidebar.panellist` 与 `main` 不再占用。
+- Client 只注册到插件管理的 `plugins.row.config`（key `@local/dsh-memory#dsh-memory`）与 `plugins.bundle.config`（key `@local/dsh-memory`）；`settings.section`、`sidebar.panellist`、`main` 均不再占用。
 - 设置页与面板都只使用 `--dsw-alias-*` 主题 token、`ctx.connection.rpc`、`ctx.slots`、`ctx.locale`，不写 DOM、不导入 DSH Client 包。
 
 ### 关于界面截图

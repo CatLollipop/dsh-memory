@@ -11,6 +11,12 @@ window.__ModuleLoader__.load({
       placeholder: '写一条记忆…', sourcePlaceholder: '来源（可选）', searchPlaceholder: '搜索记忆', empty: '还没有记忆，先在上方添加一条。',
       loading: '加载中…', deleted: '已删除', manual: '手动', failed: '操作失败：', unavailable: '无法连接宿主，请刷新页面。',
       stats: (total, revisions) => `${total} 条记忆 · ${revisions} 个版本`,
+      pageTitle: '记忆', pageDesc: '管理记忆是否启用、是否允许自动生成，以及导出或删除本机记忆数据。',
+      sectionMemory: '记忆', sectionContent: '记忆内容',
+      rowEnabled: '启用记忆功能', rowEnabledDesc: '保存有用的笔记，并在之后的对话中作为上下文参考。',
+      rowAutoSave: '允许自动生成记忆', rowAutoSaveDesc: '允许从对话中自动提取值得记住的信息；敏感内容始终被拒绝。',
+      rowStats: '记忆数据', rowDelete: '删除全部记忆', rowDeleteDesc: '永久删除本机保存的全部记忆、来源与历史版本，不可恢复。',
+      confirmDelete: '确认删除', cancel: '取消', deleteButton: '删除',
       settingsTitle: '记忆设置', settingsDesc: '在这里启用或停用记忆、导出或清空全部记忆。新增、编辑、删除单条记忆仍在左侧「Memory」面板中完成。',
       dataTitle: '记忆数据', dataDesc: '导出会得到 JSON 备份；清空会永久删除全部记忆、来源与历史版本，且不可恢复。',
       export: '导出 JSON', exported: '已导出记忆备份。', clear: '清空全部记忆', clearConfirm: '确认清空（不可恢复）', clearCancel: '取消清空', cleared: '记忆已清空。',
@@ -21,6 +27,12 @@ window.__ModuleLoader__.load({
       placeholder: 'Write a memory…', sourcePlaceholder: 'Source (optional)', searchPlaceholder: 'Search memories', empty: 'No memories yet. Add a short note above.',
       loading: 'Loading…', deleted: 'Deleted', manual: 'Manual', failed: 'Something went wrong: ', unavailable: 'Cannot reach the host. Refresh the page.',
       stats: (total, revisions) => `${total} saved · ${revisions} revisions`,
+      pageTitle: 'Memory', pageDesc: 'Control whether memory is enabled, whether it may be generated automatically, and export or delete local memory data.',
+      sectionMemory: 'Memory', sectionContent: 'Memory content',
+      rowEnabled: 'Enable memory', rowEnabledDesc: 'Save useful notes and use them as context in later conversations.',
+      rowAutoSave: 'Allow automatic memory generation', rowAutoSaveDesc: 'Let the agent extract memorable facts from chats; sensitive content is always rejected.',
+      rowStats: 'Memory data', rowDelete: 'Delete all memories', rowDeleteDesc: 'Permanently delete every memory, source, and revision stored on this machine.',
+      confirmDelete: 'Confirm delete', cancel: 'Cancel', deleteButton: 'Delete',
       settingsTitle: 'Memory settings', settingsDesc: 'Enable or disable memory, export a backup, or clear every memory. Adding and editing individual memories stays in the Memory panel.',
       dataTitle: 'Memory data', dataDesc: 'Export downloads a JSON backup; clearing permanently deletes every memory, source, and revision.',
       export: 'Export JSON', exported: 'Memory backup exported.', clear: 'Clear all memories', clearConfirm: 'Confirm clear (cannot undo)', clearCancel: 'Cancel', cleared: 'All memories cleared.',
@@ -211,31 +223,58 @@ window.__ModuleLoader__.load({
         } catch { setError(t('failed')); }
       }
 
+      const switchStyle = (on) => ({
+        width: 42, height: 24, borderRadius: 999, border: '1px solid ' + (on ? 'var(--dsw-alias-brand-primary)' : 'var(--dsw-alias-border-l2)'),
+        background: on ? 'var(--dsw-alias-brand-primary)' : 'var(--dsw-alias-bg-layer-2)', position: 'relative', cursor: 'pointer', padding: 0, flex: 'none',
+      });
+      const thumbStyle = (on) => ({
+        position: 'absolute', top: 2, left: on ? 20 : 2, width: 18, height: 18, borderRadius: '50%',
+        background: 'var(--dsw-alias-bg-base)', boxShadow: '0 1px 2px rgba(0,0,0,.18)', transition: 'left .16s ease',
+      });
+      const rowStyle = (first) => ({
+        display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 16, padding: '16px 0',
+        borderTop: first ? '0' : '1px solid var(--dsw-alias-border-l1)',
+      });
+      const rowText = (title, desc) => h('div', { style: { minWidth: 0 } },
+        h('div', { style: { fontSize: 14.5, fontWeight: 600, lineHeight: 1.4 } }, title),
+        desc ? h('div', { style: { marginTop: 4, fontSize: 12.5, lineHeight: 1.6, color: 'var(--dsw-alias-label-secondary)' } }, desc) : null);
+      const sectionTitle = (text) => h('h3', { style: { margin: 0, fontSize: 15, fontWeight: 600 } }, text);
+
       return h(React.Fragment, null,
         h('div', { style: { display: 'flex', flexDirection: 'column', gap: 18, maxWidth: 720 } },
-        h('header', null,
-          h('h2', { style: { margin: 0, fontSize: 18, fontWeight: 600 } }, t('settingsTitle')),
-          h('p', { style: { margin: '6px 0 0', fontSize: 13, lineHeight: 1.6, color: 'var(--dsw-alias-label-secondary)' } }, t('settingsDesc'))),
-        error ? h('div', { style: { ...styles.error, padding: '10px 12px', borderRadius: 8, fontSize: 13, color: 'var(--dsw-alias-state-error-primary)', background: 'var(--dsw-alias-bg-layer-2)', border: '1px solid var(--dsw-alias-state-error-primary)' } }, error) : null,
-        notice ? h('div', { role: 'status', style: { fontSize: 13, color: 'var(--dsw-alias-state-success-primary)' } }, notice) : null,
-        h('section', { style: { border: '1px solid var(--dsw-alias-border-l1)', background: 'var(--dsw-alias-bg-layer-1)', borderRadius: 12, padding: 16, display: 'flex', flexDirection: 'column', gap: 12 } },
-          h('label', { style: { display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12, fontSize: 13.5 } },
-            h('span', null, t('enabled')),
-            h('input', { type: 'checkbox', role: 'switch', checked: status?.enabled !== false, disabled: busy, onChange: (e) => act({ action: 'toggle_policy', enabled: e.target.checked }) })),
-          h('label', { style: { display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12, fontSize: 13.5 } },
-            h('span', null, t('autoSave')),
-            h('input', { type: 'checkbox', role: 'switch', checked: status?.autoSave !== false, disabled: busy, onChange: (e) => act({ action: 'toggle_policy', autoSave: e.target.checked }) })),
-          h('p', { style: { margin: 0, fontSize: 12.5, color: 'var(--dsw-alias-label-secondary)' } }, status ? t('stats', status.total, status.revisions) : t('loading'))),
-        h('section', { style: { border: '1px solid var(--dsw-alias-border-l1)', background: 'var(--dsw-alias-bg-layer-1)', borderRadius: 12, padding: 16, display: 'flex', flexDirection: 'column', gap: 10 } },
-          h('strong', { style: { fontSize: 13.5 } }, t('dataTitle')),
-          h('p', { style: { margin: 0, fontSize: 12.5, lineHeight: 1.6, color: 'var(--dsw-alias-label-secondary)' } }, t('dataDesc')),
-          h('div', { style: { display: 'flex', gap: 8, flexWrap: 'wrap' } },
-            h('button', { type: 'button', disabled: busy, onClick: exportJson, style: { ...styles.ghost, ...(busy ? styles.disabled : {}) } }, t('export')),
-            confirmClear
-              ? h('button', { type: 'button', disabled: busy, onClick: async () => { await act({ action: 'clear', confirm: true }, t('cleared')); setConfirmClear(false); }, style: styles.danger }, t('clearConfirm'))
-              : h('button', { type: 'button', disabled: busy || !status?.total, onClick: () => setConfirmClear(true), style: { ...styles.danger, ...(busy || !status?.total ? styles.disabled : {}) } }, t('clear'))),
-          confirmClear ? h('button', { type: 'button', onClick: () => setConfirmClear(false), style: { border: 0, background: 'none', padding: 0, fontSize: 12.5, color: 'var(--dsw-alias-label-secondary)', cursor: 'pointer', textAlign: 'left' } }, t('clearCancel')) : null)),
-        h(MemoryPanel, { ctx }));
+          h('header', null,
+            h('h2', { style: { margin: 0, fontSize: 20, fontWeight: 600, lineHeight: 1.3 } }, t('pageTitle')),
+            h('p', { style: { margin: '6px 0 0', fontSize: 13, lineHeight: 1.6, color: 'var(--dsw-alias-label-secondary)' } }, t('pageDesc'))),
+          error ? h('div', { role: 'alert', style: { ...styles.error, padding: '10px 12px', borderRadius: 8, fontSize: 13, color: 'var(--dsw-alias-state-error-primary)', background: 'var(--dsw-alias-bg-layer-2)', border: '1px solid var(--dsw-alias-state-error-primary)' } }, error) : null,
+          notice ? h('div', { role: 'status', style: { fontSize: 13, color: 'var(--dsw-alias-state-success-primary)' } }, notice) : null,
+          sectionTitle(t('sectionMemory')),
+          h('section', { style: { border: '1px solid var(--dsw-alias-border-l1)', background: 'var(--dsw-alias-bg-layer-1)', borderRadius: 14, padding: '4px 20px' } },
+            h('div', { style: rowStyle(true) },
+              rowText(t('rowEnabled'), t('rowEnabledDesc')),
+              h('button', {
+                type: 'button', role: 'switch', 'aria-checked': status?.enabled !== false ? 'true' : 'false',
+                'aria-label': t('rowEnabled'), disabled: busy, style: switchStyle(status?.enabled !== false),
+                onClick: () => act({ action: 'toggle_policy', enabled: !(status?.enabled !== false) }),
+              }, h('span', { style: thumbStyle(status?.enabled !== false) }))),
+            h('div', { style: rowStyle(false) },
+              rowText(t('rowAutoSave'), t('rowAutoSaveDesc')),
+              h('button', {
+                type: 'button', role: 'switch', 'aria-checked': status?.autoSave !== false ? 'true' : 'false',
+                'aria-label': t('rowAutoSave'), disabled: busy, style: switchStyle(status?.autoSave !== false),
+                onClick: () => act({ action: 'toggle_policy', autoSave: !(status?.autoSave !== false) }),
+              }, h('span', { style: thumbStyle(status?.autoSave !== false) }))),
+            h('div', { style: rowStyle(false) },
+              rowText(t('rowStats'), status ? t('stats', status.total, status.revisions) : t('loading')),
+              h('button', { type: 'button', disabled: busy, onClick: exportJson, style: { ...styles.ghost, ...(busy ? styles.disabled : {}) } }, t('export'))),
+            h('div', { style: rowStyle(false) },
+              rowText(t('rowDelete'), t('rowDeleteDesc')),
+              confirmClear
+                ? h('div', { style: { display: 'flex', gap: 8, flex: 'none' } },
+                  h('button', { type: 'button', disabled: busy, onClick: async () => { await act({ action: 'clear', confirm: true }, t('cleared')); setConfirmClear(false); }, style: styles.danger }, t('confirmDelete')),
+                  h('button', { type: 'button', onClick: () => setConfirmClear(false), style: styles.ghost }, t('cancel')))
+                : h('button', { type: 'button', disabled: busy || !status?.total, onClick: () => setConfirmClear(true), style: { ...styles.danger, ...(busy || !status?.total ? styles.disabled : {}) } }, t('deleteButton')))),
+          sectionTitle(t('sectionContent')),
+          h(MemoryPanel, { ctx })));
     }
 
     function SidebarEntry({ size = 20 }) {
@@ -246,8 +285,15 @@ window.__ModuleLoader__.load({
       inject: ['connection', 'locale', 'slots'],
       apply(ctx) {
         ctx.effect(() => {
-          const section = ctx.slots.inject('settings.section', () => ctx.slots.register({ name: 'settings.section', id: 'memory', order: 36, label: () => 'Memory' }, () => h(SettingsPage, { ctx })));
-          return () => { try { section?.(); } catch {} };
+          const row = ctx.slots.inject('plugins.row.config', () => ctx.slots.register({
+            name: 'plugins.row.config',
+            key: '@local/dsh-memory#dsh-memory',
+          }, (props) => props?.view === 'summary' ? h('span', null, translate(ctx, 'pageDesc')) : h(SettingsPage, { ctx })));
+          const bundle = ctx.slots.inject('plugins.bundle.config', () => ctx.slots.register({
+            name: 'plugins.bundle.config',
+            key: '@local/dsh-memory',
+          }, () => h(SettingsPage, { ctx })));
+          return () => { try { row?.(); } catch {} try { bundle?.(); } catch {} };
         });
       },
     };
